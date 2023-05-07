@@ -7,7 +7,7 @@ def gunicorn_setup(user: str, path_to_project: str, project_name: str):
 	with open('/etc/systemd/system/gunicorn.service', 'w', encoding='utf-8') as file:
 		file.write(f'[Unit]\nDescription=gunicorn daemon\nRequires=gunicorn.socket\nAfter=network.target\n[Service]\nUser={user}\nGroup=www-data\nWorkingDirectory={path_to_project}/{project_name}\nExecStart={path_to_project}/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock {project_name}.wsgi:application\n[Install]\nWantedBy=multi-user.target')
 
-	commands = ['systemctl start gunicorn', 'systemctl enable gunicorn']
+	commands = ['systemctl daemon-reload', 'systemctl start gunicorn', 'systemctl enable gunicorn']
 	for command in commands:
 		s(command)
 
