@@ -1,6 +1,32 @@
 from os import system as s
 
 
+def apps_setup():
+	commands = [
+		'add-apt-repository ppa:deadsnakes/ppa',
+		'apt update',
+		'apt upgrade',
+		'apt install python3.11',
+		'apt install git',
+		'apt install nginx',
+		'apt install mysql-server',
+		'apt install mysql-client',
+		'apt install python3-dev',
+		'apt install libmysqlclient-dev',
+		'apt install python3-venv',
+		'apt install python3-pip',
+		'apt install python-is-python3',
+		'test -f /home/$USER/.ssh/id_rsa.pub || ssh-keygen -t rsa -b 4096 -C dshutrin@mail.ru -f /home/$USER/.ssh/id_rsa -N ""',
+		'clear',
+		'service nginx status',
+		'cat /home/$USER/.ssh/id_rsa.pub'
+	]
+	for command in commands:
+		s(f'{command} -y')
+
+	input('Добавьте ssh ключ в свой github аккаунт и клонируйте репозиторий с проектом перед тем как продолжить\nПродолжить...')
+
+
 def gunicorn_setup(user: str, path_to_project: str, project_name: str):
 	with open('/etc/systemd/system/gunicorn.socket', 'w', encoding='utf-8') as file:
 		file.write('[Unit]\nDescription=gunicorn socket\n[Socket]\nListenStream=/run/gunicorn.sock\n[Install]\nWantedBy=sockets.target')
@@ -25,12 +51,14 @@ def nginx_setup(path_to_project, project_name, domen):
 
 
 def setup():
-	path_to_venv = input('Enter path to venv: ')
-	path_to_project = input('Enter path to project: ')
-	domen = input('Enter site domen name: ')
-	project_name = input('Enter project folder name: ')
-	unix_username = input('Enter unix user for setup: ')
+	input('!!!Предупреждение!!!\nФайл должен быть запущен с правами суперпользователя!')
 
+	path_to_project = input('Введите путь к проекту: ')
+	domen = input('Введите домен, на котором будет работать сайт: ')
+	project_name = input('Введите название проекта (имя папки): ')
+	unix_username = input('Введите имя пользователя: ')
+
+	apps_setup()
 	gunicorn_setup(unix_username, path_to_project, project_name)
 	nginx_setup(path_to_project, project_name, domen)
 
