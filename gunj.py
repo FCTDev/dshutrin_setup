@@ -1,7 +1,11 @@
 from os import system as s
+import os
+import platform
+import sys
 
 
 def apps_setup():
+	#  Установка необходимых пакетов
 	commands = [
 		'add-apt-repository ppa:deadsnakes/ppa',
 		'apt update',
@@ -28,6 +32,7 @@ def apps_setup():
 
 
 def gunicorn_setup(user: str, path_to_project: str, project_name: str):
+	#  Настройка файлов для работы gunicorn
 	with open('/etc/systemd/system/gunicorn.socket', 'w', encoding='utf-8') as file:
 		file.write('[Unit]\nDescription=gunicorn socket\n[Socket]\nListenStream=/run/gunicorn.sock\n[Install]\nWantedBy=sockets.target')
 	with open('/etc/systemd/system/gunicorn.service', 'w', encoding='utf-8') as file:
@@ -39,6 +44,7 @@ def gunicorn_setup(user: str, path_to_project: str, project_name: str):
 
 
 def nginx_setup(path_to_project, project_name, domen):
+	#  Настройка файлов для работы Njinx
 	file_data = 'server {\nlisten 80;\nserver_name ' + domen
 	file_data = file_data + ';\nlocation = /favicon.ico { access_log off; log_not_found off; }\nlocation /static/ {\nroot '
 	file_data = file_data + path_to_project + '/' + project_name
@@ -50,18 +56,78 @@ def nginx_setup(path_to_project, project_name, domen):
 		s(command)
 
 
-def setup():
-	input('!!!Предупреждение!!!\nФайл должен быть запущен с правами суперпользователя!')
+def mysql_setup(path_to_project, project_name):
+	# Создание базы данных, пользователя, выдача прав
+	sys.path.append(f'{path_to_project}/{project_name}/{project_name}')
+	from settings import DATABASES
 
-	path_to_project = input('Введите путь к проекту: ')
+	if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
+		db_name = DATABASES['default']['NAME']
+		db_user = DATABASES['default']['USER']
+		db_host = DATABASES['default']['HOST']
+		db_password = DATABASES['default']['PASSWORD']
+
+		with open('mysql_conf.sql', 'w') as file:
+			file.write(f'create database if not exists {db_name};')
+			file.write(f'create user if not exists {db_username}@{db_host} identified by "{db_password}";')
+			file.write(f'grant all privileges on {db_name}.* to {db_user}@{db_password} with grant option;')
+			file.write('flush privileges;')
+
+		s('mysql < mysql_conf.sql')
+		s('rm mysql_conf.sql')
+	else:
+		exit('ОШИБКА!!!\nНастройте проект на работу с MYSQL')
+
+
+def auto_migrate_database():
+	pass
+
+
+def get_path(message):
+	#  Корректный ввод расположения папки
+	path = input(message)
+	while '\\' in path:
+		print('Все пути к файлам и директориям должны использовать знак <</>> вместо <<\>>.')
+		path = input(message)
+	if path.endswith('/'):
+		path = path[::-1][1:][::-1]
+	return path
+
+
+def chmod(path):
+	#  Выдача прав доступа для проекта Django
+	path_steps = [x for x in path.split('/') if x]
+	path = ''
+	for path_step in path_steps:
+		path = f'{path}/{path_step}'
+		if os.path.exists(path):
+			s(f'chmod 755 -R {path}')
+			s(f'chown -R www-data {path}')
+		else:
+			print(f'Не удалось найти папку {path}')
+
+
+def setup():
+	print('Внимание!!!\nВ папке проекта должно быть виртуальное окружение!\nПеред запуском этого скрипта - активируйте виртуальое окружение и выполните установку необходимых модулей!')
+	input('!!!Предупреждение!!!\nФайл должен быть запущен с правами суперпользователя!\nВсе вводимые вами пути к файлам и директориям должны использовать знак <</>> вместо <<\>>.')
+
+	apps_setup()
+
+	path_to_project = get_path('Введите путь к проекту: ')
 	domen = input('Введите домен, на котором будет работать сайт: ')
 	project_name = input('Введите название проекта (имя папки): ')
 	unix_username = input('Введите имя пользователя: ')
 
-	apps_setup()
-	gunicorn_setup(unix_username, path_to_project, project_name)
-	nginx_setup(path_to_project, project_name, domen)
+	if os.path.exists(f'{path_to_project}/venv') and
+		os.path.exists(f'{path_to_project}/{project_name}') and
+			os.path.exists(f'{path_to_project}/{project_name}/{project_name}/settings.py'):
+		mysql_setup(path_to_project, project_name)
+		gunicorn_setup(unix_username, path_to_project, project_name)
+		nginx_setup(path_to_project, project_name, domen)
+	else:
+		print('Ошибка введённых данных!')
 
 
-if __name__ == '__main__':
-	setup()
+if (__name__ == '__main__'): #and (platform.system() == 'Linux'):
+	#setup()
+	chmod('/var/www/promzone/')
