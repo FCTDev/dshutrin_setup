@@ -90,6 +90,8 @@ def venv_conf(project_name):
 	for pkg in need_pkgs:
 		if not (pkg in all_pkgs):
 			run([sys.executable, "-m", "pip", "install", pkg])
+	run([sys.executable, "manage.py", "makemigrations"])
+	run([sys.executable, "manage.py", "migrate"])
 
 
 if __name__ == '__main__':
