@@ -38,8 +38,8 @@ def venv_conf(project_name):
 	for pkg in need_pkgs:
 		if not (pkg in all_pkgs):
 			run([sys.executable, "-m", "pip", "install", pkg])
-	run([sys.executable, "manage.py", "makemigrations"])
-	run([sys.executable, "manage.py", "migrate"])
+	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "makemigrations"])
+	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "migrate"])
 
 
 def mysql_init(project_name):
