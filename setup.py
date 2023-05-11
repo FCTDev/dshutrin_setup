@@ -4,6 +4,7 @@ from os import mkdir, chdir
 import sys
 import venv
 from subprocess import run
+from pprint import pprint
 
 
 def apps_install():
@@ -27,6 +28,34 @@ def apps_install():
 		s(f'{command} -y')
 
 
+def nginx_conf(project_name):
+	domen = input('Введите домен, на котором будет работать сайт: ')
+	file_data = 'server {\nlisten 80;\nserver_name ' + domen
+	file_data = file_data + ';\nlocation = /favicon.ico { access_log off; log_not_found off; }\nlocation /static/ {\nroot '
+	file_data = file_data + f'/{project_name}/{project_name}'
+	file_data += ';\nindex index.html;\n}\nlocation / {\ninclude proxy_params;\nproxy_pass http://unix:/run/gunicorn.sock;\n}\n}\n'
+	pprint(file_data)
+	with open(f'/etc/nginx/sites-available/{project_name}', 'w', encoding='utf-8') as file:
+		file.write(file_data)
+	commands = [f'ln -s /etc/nginx/sites-available/{project_name} /etc/nginx/sites-enabled', 'systemctl restart nginx']
+	for command in commands:
+		s(command)
+
+
+def gunicorn_conf(project_name):
+	#  Настройка файлов для работы gunicorn
+	with open('/etc/systemd/system/gunicorn.socket', 'w', encoding='utf-8') as file:
+		file.write('[Unit]\nDescription=gunicorn socket\n[Socket]\nListenStream=/run/gunicorn.sock\n[Install]\nWantedBy=sockets.target')
+	with open('/etc/systemd/system/gunicorn.service', 'w', encoding='utf-8') as file:
+		file.write(f'[Unit]\nDescription=gunicorn daemon\nRequires=gunicorn.socket\nAfter=network.target\n[Service]\nUser=root\nGroup=www-data\nWorkingDirectory={project_name}/{project_name}\nExecStart=/{project_name}/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock {project_name}.wsgi:application\n[Install]\nWantedBy=multi-user.target')
+
+	commands = ['systemctl daemon-reload', 'systemctl start gunicorn', 'systemctl enable gunicorn']
+	for command in commands:
+		s(command)
+
+	nginx_conf(project_name)
+
+
 def venv_conf(project_name):
 	sys.executable = f'/{project_name}/venv/bin/python'
 	all_pkgs = ''
@@ -40,6 +69,8 @@ def venv_conf(project_name):
 			run([sys.executable, "-m", "pip", "install", pkg])
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "makemigrations"])
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "migrate"])
+
+	gunicorn_conf(project_name)
 
 
 def mysql_init(project_name):
@@ -97,6 +128,5 @@ def download_repo():
 
 
 if __name__ == '__main__':
-	#  apps_install()
-	#  download_repo()
-	pass
+	apps_install()
+	download_repo()
