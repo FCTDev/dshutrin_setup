@@ -27,6 +27,21 @@ def apps_install():
 		s(f'{command} -y')
 
 
+def venv_conf(project_name):
+	sys.executable = f'/{project_name}/venv/bin/python'
+	all_pkgs = ''
+	with open(f'/{project_name}/{project_name}/requirements.txt', 'r', encoding='utf-8') as file:
+		all_pkgs = file.read()
+	for pkg in all_pkgs.split('\n'):
+		run([sys.executable, "-m", "pip", "install", pkg])
+	need_pkgs = ('gunicorn', 'django', 'mysqlclient')
+	for pkg in need_pkgs:
+		if not (pkg in all_pkgs):
+			run([sys.executable, "-m", "pip", "install", pkg])
+	run([sys.executable, "manage.py", "makemigrations"])
+	run([sys.executable, "manage.py", "migrate"])
+
+
 def mysql_init(project_name):
 	sys.path.append(f'/{project_name}/{project_name}/{project_name}')
 	from settings import DATABASES
@@ -46,6 +61,8 @@ flush privileges;
 
 	s('mysql < mysql_conf.sql')
 	s('rm mysql_conf.sql')
+
+	venv_conf(project_name)
 
 
 def download_repo():
@@ -77,21 +94,6 @@ def download_repo():
 		return 'error'
 
 	mysql_init(project_name)
-
-
-def venv_conf(project_name):
-	sys.executable = f'/{project_name}/venv/bin/python'
-	all_pkgs = ''
-	with open(f'/{project_name}/{project_name}/requirements.txt', 'r', encoding='utf-8') as file:
-		all_pkgs = file.read()
-	for pkg in all_pkgs.split('\n'):
-		run([sys.executable, "-m", "pip", "install", pkg])
-	need_pkgs = ('gunicorn', 'django', 'mysqlclient')
-	for pkg in need_pkgs:
-		if not (pkg in all_pkgs):
-			run([sys.executable, "-m", "pip", "install", pkg])
-	run([sys.executable, "manage.py", "makemigrations"])
-	run([sys.executable, "manage.py", "migrate"])
 
 
 if __name__ == '__main__':
