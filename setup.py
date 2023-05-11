@@ -66,8 +66,20 @@ def venv_conf(project_name):
 	for pkg in need_pkgs:
 		if not (pkg in all_pkgs):
 			run([sys.executable, "-m", "pip", "install", pkg])
+
+	superuser_name = input('Введите имя суперпользователя: ')
+	superuser_password = input('Введите пароль суперпользователя: ')
+	superuser_email = input('Введите email суперпользователя: ')
+
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "makemigrations"])
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "migrate"])
+
+	run([sys.executable, f"export", f"DJANGO_SUPERUSER_USERNAME={superuser_name}"])
+	run([sys.executable, f"export", f"DJANGO_SUPERUSER_PASSWORD={superuser_password}"])
+	run([sys.executable, f"export", f"DJANGO_SUPERUSER_EMAIL={superuser_email}"])
+	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "createsuperuser", "--noinput"])
+
+	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "collectstatic", "--noinput"])
 
 	gunicorn_conf(project_name)
 
@@ -91,6 +103,8 @@ flush privileges;
 
 	s('mysql < mysql_conf.sql')
 	s('rm mysql_conf.sql')
+
+
 
 	venv_conf(project_name)
 
@@ -118,6 +132,12 @@ def download_repo():
 	if not path.exists(f'/{project_name}/{project_name}/requirements.txt'):
 		print('Файл requirements.txt не найден!')
 		is_ok = False
+
+	sys.path.append(f'/{project_name}/{project_name}/{project_name}')
+	from settings import DEBUG
+
+	if not DEBUG:
+		input('!!!ВНИМАНИЕ!!!\nВ ПРОЕКТЕ ВКЛЮЧЕН РЕЖИМ ОТЛАДКИ\nОТКЛЮЧИТЕ ЕГО ДЛЯ КОРРЕКТНОЙ СБОРКИ СТАТИЧЕСКИХ ФАЙЛОВ\n!!!ВНИМАНИЕ!!!\nПРОДОЛЖИТЬ...')
 
 	if not is_ok:
 		print('Ошибка конфигурации проекта')
