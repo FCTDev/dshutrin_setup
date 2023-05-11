@@ -67,16 +67,8 @@ def venv_conf(project_name):
 		if not (pkg in all_pkgs):
 			run([sys.executable, "-m", "pip", "install", pkg])
 
-	superuser_name = input('Введите имя суперпользователя: ')
-	superuser_password = input('Введите пароль суперпользователя: ')
-	superuser_email = input('Введите email суперпользователя: ')
-
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "makemigrations"])
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "migrate"])
-
-	s(f"export DJANGO_SUPERUSER_PASSWORD={superuser_password}")
-	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "createsuperuser", "--username", superuser_name, "--email", superuser_email, "--noinput"])
-
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "collectstatic", "--noinput"])
 
 	gunicorn_conf(project_name)
@@ -134,7 +126,7 @@ def download_repo():
 	sys.path.append(f'/{project_name}/{project_name}/{project_name}')
 	from settings import DEBUG
 
-	if not DEBUG:
+	if DEBUG == False:
 		input('!!!ВНИМАНИЕ!!!\nВ ПРОЕКТЕ ВКЛЮЧЕН РЕЖИМ ОТЛАДКИ\nОТКЛЮЧИТЕ ЕГО ДЛЯ КОРРЕКТНОЙ СБОРКИ СТАТИЧЕСКИХ ФАЙЛОВ\n!!!ВНИМАНИЕ!!!\nПРОДОЛЖИТЬ...')
 
 	if not is_ok:
