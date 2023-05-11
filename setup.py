@@ -74,10 +74,9 @@ def venv_conf(project_name):
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "makemigrations"])
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "migrate"])
 
-	s(f"export DJANGO_SUPERUSER_USERNAME={superuser_name}")
 	s(f"export DJANGO_SUPERUSER_PASSWORD={superuser_password}")
 	s(f"export DJANGO_SUPERUSER_EMAIL={superuser_email}")
-	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "createsuperuser", "--noinput"])
+	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "createsuperuser", "--username", superuser_name, "--noinput"])
 
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "collectstatic", "--noinput"])
 
