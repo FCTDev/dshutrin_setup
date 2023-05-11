@@ -21,11 +21,11 @@ def apps_install():
 		'apt install libmysqlclient-dev',
 		'apt install python3-venv',
 		'apt install python3-pip',
-		'apt install python-is-python3',
-		'service nginx status'
+		'apt install python-is-python3'
 	]
 	for command in commands:
-		s(f'{command} -y')
+		s(f'NEEDRESTART_MODE=a {command} -y')
+	s('service nginx status')
 
 
 def nginx_conf(project_name):
