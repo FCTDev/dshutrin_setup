@@ -2,6 +2,8 @@ from os import system as s
 from os import path
 from os import mkdir, chdir
 import sys
+import venv
+from subprocess import run
 
 
 def apps_install():
@@ -54,14 +56,20 @@ def download_repo():
 	chdir(f'/{project_name}')
 
 	s(f'git clone {repo_link}')
-	s('python -m venv venv')
+	venv.create(f'/{project_name}/venv', with_pip=True)
+	#s('python -m venv venv')
 	s(f'chown www-data -R /{project_name}')
 	s(f'chmod 755 -R /{project_name}')
 
 	is_ok = True
 	if not path.exists(f'/{project_name}/{project_name}/{project_name}/settings.py'):
+		print('Файл settings.py находится не там, где должен!')
 		is_ok = False
 	if not path.exists(f'/{project_name}/venv'):
+		print('Папка venv находится не там, где должена!')
+		is_ok = False
+	if not path.exists(f'/{project_name}/{project_name}/requirements.txt'):
+		print('Файл requirements.txt не найден!')
 		is_ok = False
 
 	if not is_ok:
@@ -71,6 +79,20 @@ def download_repo():
 	mysql_init(project_name)
 
 
+def venv_conf(project_name):
+	sys.executable = f'/{project_name}/venv/bin/python'
+	all_pkgs = ''
+	with open(f'/{project_name}/{project_name}/requirements.txt', 'r', encoding='utf-8') as file:
+		all_pkgs = file.read()
+	for pkg in all_pkgs.split('\n'):
+		run([sys.executable, "-m", "pip", "install", pkg])
+	need_pkgs = ('gunicorn', 'django', 'mysqlclient')
+	for pkg in need_pkgs:
+		if not (pkg in all_pkgs):
+			run([sys.executable, "-m", "pip", "install", pkg])
+
+
 if __name__ == '__main__':
-	#apps_install()
-	download_repo()
+	#  apps_install()
+	#  download_repo()
+	pass
