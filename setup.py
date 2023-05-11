@@ -2,7 +2,6 @@ from os import system as s
 from os import path
 from os import mkdir, chdir
 import sys
-from pprint import pprint
 
 
 def apps_install():
@@ -26,6 +25,27 @@ def apps_install():
 		s(f'{command} -y')
 
 
+def mysql_init(project_name):
+	sys.path.append(f'/{project_name}/{project_name}/{project_name}')
+	from settings import DATABASES
+
+	db_name = DATABASES['default']['NAME']
+	db_user = DATABASES['default']['USER']
+	db_user_password = DATABASES['default']['PASSWORD']
+	db_user_host = DATABASES['default']['HOST']
+
+	sql_command = f'''create database {db_name};
+create user {db_user}@{db_user_host} identified by "{db_user_password}";
+grant all privileges on {db_name}.* to {db_user}@{db_user_host} with grant option;
+flush privileges;
+'''
+	with open('mysql_conf.sql', 'w', encoding='utf-8') as file:
+		file.write(sql_command)
+
+	s('mysql < mysql_conf.sql')
+	s('rm mysql_conf.sql')
+
+
 def download_repo():
 	repo_link = input('Введите ссылку на публичный репозиторий проекта: ')
 	project_name = repo_link.split('/')[-1].replace('.git', '')
@@ -46,14 +66,9 @@ def download_repo():
 
 	if not is_ok:
 		print('Ошибка конфигурации проекта')
-		exit()
+		return 'error'
 
-
-def mysql_init(project_name):
-	sys.path.append(f'/{project_name}/{project_name}/{project_name}')
-	from settings import DATABASES
-
-	pprint(DATABASES)
+	mysql_init(project_name)
 
 
 if __name__ == '__main__':
