@@ -63,14 +63,14 @@ def mysql_setup(path_to_project, project_name):
 
 	if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
 		db_name = DATABASES['default']['NAME']
-		db_user = DATABASES['default']['USER']
+		db_username = DATABASES['default']['USER']
 		db_host = DATABASES['default']['HOST']
 		db_password = DATABASES['default']['PASSWORD']
 
 		with open('mysql_conf.sql', 'w') as file:
 			file.write(f'create database if not exists {db_name};')
 			file.write(f'create user if not exists {db_username}@{db_host} identified by "{db_password}";')
-			file.write(f'grant all privileges on {db_name}.* to {db_user}@{db_password} with grant option;')
+			file.write(f'grant all privileges on {db_name}.* to {db_username}@{db_password} with grant option;')
 			file.write('flush privileges;')
 
 		s('mysql < mysql_conf.sql')
@@ -95,21 +95,19 @@ def get_path(message):
 
 
 def chmod(path):
-	#  Выдача прав доступа для проекта Django
-	path_steps = [x for x in path.split('/') if x]
-	path = ''
-	for path_step in path_steps:
-		path = f'{path}/{path_step}'
-		if os.path.exists(path):
-			s(f'chmod 755 -R {path}')
-			s(f'chown -R www-data {path}')
-		else:
-			print(f'Не удалось найти папку {path}')
+	#  Выдача прав доступа
+	s(f'chmod 755 -R /home')
+	s(f'chown -R www-data /home')
 
 
 def setup():
+
+	if os.getlogin() != 'root':
+		print('Запустите скрипт от пользователя root!')
+		exit()
+
 	print('Внимание!!!\nВ папке проекта должно быть виртуальное окружение!\nПеред запуском этого скрипта - активируйте виртуальое окружение и выполните установку необходимых модулей!')
-	input('!!!Предупреждение!!!\nФайл должен быть запущен с правами суперпользователя!\nВсе вводимые вами пути к файлам и директориям должны использовать знак <</>> вместо <<\>>.')
+	input('!!!Предупреждение!!!\nВсе вводимые вами пути к файлам и директориям должны использовать знак <</>> вместо <<\>>.')
 
 	apps_setup()
 
@@ -120,9 +118,7 @@ def setup():
 	project_name = input('Введите название проекта (имя папки): ')
 	unix_username = input('Введите имя пользователя: ')
 
-	if os.path.exists(f'{path_to_project}/venv') and
-		os.path.exists(f'{path_to_project}/{project_name}') and
-			os.path.exists(f'{path_to_project}/{project_name}/{project_name}/settings.py'):
+	if os.path.exists(f'{path_to_project}/venv') and os.path.exists(f'{path_to_project}/{project_name}') and os.path.exists(f'{path_to_project}/{project_name}/{project_name}/settings.py'):
 		mysql_setup(path_to_project, project_name)
 		gunicorn_setup(unix_username, path_to_project, project_name)
 		nginx_setup(path_to_project, project_name, domen)
@@ -130,6 +126,5 @@ def setup():
 		print('Ошибка введённых данных!')
 
 
-if (__name__ == '__main__'): #and (platform.system() == 'Linux'):
-	#setup()
-	chmod('/var/www/promzone/')
+if (__name__ == '__main__') and (platform.system() == 'Linux'):
+	setup()
