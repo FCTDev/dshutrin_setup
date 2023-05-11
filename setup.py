@@ -34,10 +34,9 @@ def nginx_conf(project_name):
 	file_data = file_data + ';\nlocation = /favicon.ico { access_log off; log_not_found off; }\nlocation /static/ {\nroot '
 	file_data = file_data + f'/{project_name}/{project_name}'
 	file_data += ';\nindex index.html;\n}\nlocation / {\ninclude proxy_params;\nproxy_pass http://unix:/run/gunicorn.sock;\n}\n}\n'
-	pprint(file_data)
 	with open(f'/etc/nginx/sites-available/{project_name}', 'w', encoding='utf-8') as file:
 		file.write(file_data)
-	commands = [f'ln -s /etc/nginx/sites-available/{project_name} /etc/nginx/sites-enabled', 'systemctl restart nginx']
+	commands = [f'ln -s /etc/nginx/sites-available/{project_name} /etc/nginx/sites-enabled', 'systemctl restart nginx', 'service nginx restart']
 	for command in commands:
 		s(command)
 
@@ -47,9 +46,9 @@ def gunicorn_conf(project_name):
 	with open('/etc/systemd/system/gunicorn.socket', 'w', encoding='utf-8') as file:
 		file.write('[Unit]\nDescription=gunicorn socket\n[Socket]\nListenStream=/run/gunicorn.sock\n[Install]\nWantedBy=sockets.target')
 	with open('/etc/systemd/system/gunicorn.service', 'w', encoding='utf-8') as file:
-		file.write(f'[Unit]\nDescription=gunicorn daemon\nRequires=gunicorn.socket\nAfter=network.target\n[Service]\nUser=root\nGroup=www-data\nWorkingDirectory={project_name}/{project_name}\nExecStart=/{project_name}/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock {project_name}.wsgi:application\n[Install]\nWantedBy=multi-user.target')
+		file.write(f'[Unit]\nDescription=gunicorn daemon\nRequires=gunicorn.socket\nAfter=network.target\n[Service]\nUser=root\nGroup=www-data\nWorkingDirectory=/{project_name}/{project_name}\nExecStart=/{project_name}/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock {project_name}.wsgi:application\n[Install]\nWantedBy=multi-user.target')
 
-	commands = ['systemctl daemon-reload', 'systemctl start gunicorn', 'systemctl enable gunicorn']
+	commands = ['systemctl daemon-reload', 'systemctl restart gunicorn.socket', 'systemctl restart gunicorn.service', 'systemctl start gunicorn.socket', 'systemctl enable gunicorn.socket']
 	for command in commands:
 		s(command)
 
