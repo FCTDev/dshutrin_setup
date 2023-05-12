@@ -69,6 +69,13 @@ def venv_conf(project_name):
 
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "makemigrations"])
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "migrate"])
+
+	username = input('Введите имя пользователя для суперпользователя: ')
+	email = input('Введите email суперпользователя: ')
+	password = input('Введите пароль для суперпользователя: ')
+
+	s(f'export DJANGO_SUPERUSER_PASSWORD={password}')
+	s(f'/{project_name}/venv/bin/python /{project_name}/{project_name}/manage.py createsuperuser --username {username} --email {email} --noinput')
 	run([sys.executable, f"/{project_name}/{project_name}/manage.py", "collectstatic", "--noinput"])
 
 	gunicorn_conf(project_name)
